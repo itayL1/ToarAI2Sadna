@@ -3,16 +3,6 @@ from compsoc.profile import Profile
 
 
 def kemeny_rule(profile: Profile, candidate: int) -> int:
-    """
-    Calculates the Kemeny score for a candidate based on a profile.
-
-    :param profile: The voting profile.
-    :type profile: Profile
-    :param candidate: The base candidate for scoring.
-    :type candidate: int
-    :return: The Kemeny score for the candidate.
-    :rtype: int
-    """
     candidates = profile.candidates
     num_candidates = len(candidates)
     all_permutations = itertools.permutations(candidates)
