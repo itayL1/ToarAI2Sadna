@@ -3,11 +3,14 @@ from typing import Callable, Collection
 from compsoc.evaluate import get_rule_utility
 from compsoc.profile import Profile
 
+from rules.borda_rule import borda_rule
 from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
+from rules.dowdall_rule import dowdall_rule
 from rules.k_approval_rule import k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
+from rules.simpson_rule import simpson_rule
 
 
 def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict], topn: int):
@@ -25,7 +28,7 @@ def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict],
 
 if __name__ == '__main__':
     eval_rule(
-        rule_func=maximin_rule,
+        rule_func=simpson_rule,
         pairs=[
             {"frequency": 5, "ballot": [1, 2, 3]},
             {"frequency": 6, "ballot": [3, 2, 1]},
