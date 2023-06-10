@@ -11,6 +11,7 @@ from rules.k_approval_rule import k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
 from rules.simpson_rule import simpson_rule
+from rules.veto_rule import veto_rule
 
 
 def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict], topn: int):
@@ -28,7 +29,7 @@ def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict],
 
 if __name__ == '__main__':
     eval_rule(
-        rule_func=simpson_rule,
+        rule_func=veto_rule,
         pairs=[
             {"frequency": 5, "ballot": [1, 2, 3]},
             {"frequency": 6, "ballot": [3, 2, 1]},
