@@ -14,7 +14,7 @@ from rules.simpson_rule import simpson_rule
 from rules.veto_rule import veto_rule
 
 
-def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict], topn: int):
+def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict], topn: int, verbose: bool):
     pair_tuples = {
         (pair["frequency"], tuple(pair["ballot"]))
         for pair in pairs
@@ -22,14 +22,15 @@ def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict],
     results = get_rule_utility(
         profile=Profile(pairs=pair_tuples),
         rule=rule_func,
-        topn=topn
+        topn=topn,
+        verbose=verbose
     )
     print(f"results: {results}")
 
 
 if __name__ == '__main__':
     eval_rule(
-        rule_func=kemeny_rule,
+        rule_func=plurality_rule,
         pairs=[
             {"frequency": 3, "ballot": [4, 9, 8, 7, 6, 5, 3, 0, 2, 1]},
             {"frequency": 56, "ballot": [5, 0, 1, 2, 3, 4, 6, 9, 7, 8]},
@@ -43,5 +44,6 @@ if __name__ == '__main__':
             {"frequency": 396, "ballot": [4, 9, 8, 7, 6, 5, 3, 1, 2, 0]},
             {"frequency": 396, "ballot": [5, 0, 1, 2, 3, 4, 6, 8, 9, 7]},
         ],
-        topn=1
+        topn=1,
+        verbose=False
     )
