@@ -8,3 +8,10 @@ def plurality_rule(profile: Profile, candidate: int) -> int:
         if ballot[0] == candidate
     )
     return candidate_score
+
+
+
+
+
+
+
