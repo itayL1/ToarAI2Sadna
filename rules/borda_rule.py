@@ -1,6 +1,6 @@
 from compsoc.profile import Profile
 
-GAMMA = 1
+GAMMA = 0.1
 
 
 def borda_rule(profile: Profile, candidate: int) -> int:
