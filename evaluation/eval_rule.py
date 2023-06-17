@@ -12,6 +12,7 @@ from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
 from rules.simpson_rule import simpson_rule
 from rules.veto_rule import veto_rule
+from rules.stv_rule import stv_rule
 
 
 def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict], topn: int, verbose: bool):
@@ -30,7 +31,7 @@ def eval_rule(rule_func: Callable[[Profile, int], int], pairs: Collection[dict],
 
 if __name__ == '__main__':
     eval_rule(
-        rule_func=plurality_rule,
+        rule_func=stv_rule,
         pairs=[
             {"frequency": 3, "ballot": [4, 9, 8, 7, 6, 5, 3, 0, 2, 1]},
             {"frequency": 56, "ballot": [5, 0, 1, 2, 3, 4, 6, 9, 7, 8]},
