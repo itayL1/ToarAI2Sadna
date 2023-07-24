@@ -74,6 +74,6 @@ if __name__ == '__main__':
         topn=3, # not sure yet
         distortion_ratio=0.2, # not sure yet
         eval_iterations_count=10,
-        random_seed=41,
+        random_seed=42,
         verbose=False
     )
