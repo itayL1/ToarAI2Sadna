@@ -1,6 +1,6 @@
 from compsoc.profile import Profile
 
-from rules.borda_rule import borda_rule
+from rules.borda_gamma_rule import borda_gamma_rule
 from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
 from rules.k_approval_rule import k_approval_rule
