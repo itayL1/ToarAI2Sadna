@@ -8,6 +8,7 @@ from compsoc.profile import Profile
 from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile
 from tqdm import tqdm
 
+from rules.borda_gamma_rule import borda_gamma_rule
 from rules.borda_rule import borda_rule
 from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
@@ -69,6 +70,10 @@ def _titled(text: str) -> str:
 
 
 if __name__ == '__main__':
+    # real compilation scores:
+    # ----------------------
+    # * plurality_rule: min: ~4,680 max: ~4,840
+
     eval_rule(
         rule_func=plurality_rule,
         topn=3, # not sure yet
