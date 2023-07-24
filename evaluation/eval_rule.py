@@ -1,5 +1,7 @@
-from typing import Callable, Collection
+import random
+from typing import Callable, Collection, Optional
 
+import numpy as np
 import pandas as pd
 from compsoc.evaluate import get_rule_utility
 from compsoc.profile import Profile
@@ -17,10 +19,16 @@ from rules.simpson_rule import simpson_rule
 from rules.veto_rule import veto_rule
 
 
-def eval_rule(rule_func: Callable[[Profile, int], int], verbose: bool):
-    topn = 3 # not sure yet
-    distortion_ratio = 0.2 # not sure yet
-    eval_iterations_count = 10
+def eval_rule(
+    rule_func: Callable[[Profile, int], int],
+    topn: int,
+    distortion_ratio: float,
+    eval_iterations_count: int,
+    random_seed: Optional[int] = None,
+    verbose: bool = False
+):
+    if random_seed is not None:
+        _set_global_random_seed(random_seed)
 
     iterations_results = []
     pbar_base_message = "eval iterations progress"
@@ -42,6 +50,11 @@ def eval_rule(rule_func: Callable[[Profile, int], int], verbose: bool):
           f"\n\n\n{_titled('iteration results stats:')}\n\n{iterations_results_df.describe().round(1)}")
 
 
+def _set_global_random_seed(random_seed: int):
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+
+
 def _generate_eval_profile(distortion_ratio: float) -> Profile:
     pair_tuples = generate_random_votes(number_voters=1_000, number_candidates=20)
     pair_tuples_set = set(pair_tuples)
@@ -58,5 +71,9 @@ def _titled(text: str) -> str:
 if __name__ == '__main__':
     eval_rule(
         rule_func=plurality_rule,
+        topn=3, # not sure yet
+        distortion_ratio=0.2, # not sure yet
+        eval_iterations_count=10,
+        random_seed=41,
         verbose=False
     )
