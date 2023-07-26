@@ -13,6 +13,7 @@ from rules.borda_rule import borda_rule
 from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
+from rules.idea import idea_rule
 from rules.k_approval_rule import k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
@@ -26,6 +27,7 @@ def eval_rule(
     distortion_ratio: float,
     eval_iterations_count: int,
     random_seed: Optional[int] = None,
+    print_results: bool = False,
     verbose: bool = False
 ):
     if random_seed is not None:
@@ -45,10 +47,13 @@ def eval_rule(
             pbar.update()
             pbar.set_description(f"{pbar_base_message} (last iteration results: {iteration_results})")
             iterations_results.append({'iter_index': i, **iteration_results})
-
     iterations_results_df = pd.DataFrame(iterations_results)
-    print(f"\n\n{_titled('all iteration results:')}\n\n{iterations_results_df.round(1)}"
-          f"\n\n\n{_titled('iteration results stats:')}\n\n{iterations_results_df.describe().round(1)}")
+
+    if print_results:
+        print(f"\n\n{_titled('all iteration results:')}\n\n{iterations_results_df.round(1)}"
+              f"\n\n\n{_titled('iteration results stats:')}\n\n{iterations_results_df.describe().round(1)}")
+
+    return iterations_results_df
 
 
 def _set_global_random_seed(random_seed: int):
@@ -72,13 +77,15 @@ def _titled(text: str) -> str:
 if __name__ == '__main__':
     # real compilation scores:
     # ----------------------
-    # * plurality_rule: min: ~4,680 max: ~4,840
+    # * plurality_rule: ~4,680 - ~4,840
+    # * borda_rule: ~4,727 - ~4801
 
     eval_rule(
-        rule_func=plurality_rule,
-        topn=3, # not sure yet
-        distortion_ratio=0.2, # not sure yet
+        rule_func=idea_rule,
+        topn=9, # not sure yet
+        distortion_ratio=0.5, # not sure yet
         eval_iterations_count=10,
         random_seed=42,
+        print_results=True,
         verbose=False
     )
