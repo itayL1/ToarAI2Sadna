@@ -15,25 +15,27 @@ from rules.dowdall_rule import dowdall_rule
 from rules.k_approval_rule import build_k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
+from rules.random_rule import random_rule
 from rules.simpson_rule import simpson_rule
 from rules.veto_rule import veto_rule
 
 RULE_NAME_TO_FUNC = {
-    'borda': borda_rule,
-    'copeland': copeland_rule,
-    'dowdall': dowdall_rule,
-    'maximin': maximin_rule,
-    'plurality': plurality_rule,
-    'simpson': simpson_rule,
-    'veto': veto_rule,
-    **{
-        f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
-        for gamma in (0.975, 0.75, 0.6, 0.25)
-    },
-    **{
-        f'k_approval_k_{k}': build_k_approval_rule(k)
-        for k in (2, 3, 4, 5)
-    },
+    # 'borda': borda_rule,
+    # 'copeland': copeland_rule,
+    # 'dowdall': dowdall_rule,
+    # 'maximin': maximin_rule,
+    # 'plurality': plurality_rule,
+    # 'simpson': simpson_rule,
+    # 'veto': veto_rule,
+    'random': random_rule,
+    # **{
+    #     f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
+    #     for gamma in (0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.25)
+    # },
+    # **{
+    #     f'k_approval_k_{k}': build_k_approval_rule(k)
+    #     for k in (2, 3, 4, 5, 6, 7, 8, 9)
+    # },
 }
 
 
@@ -118,7 +120,7 @@ def _store_experiment_results(experiment_id: str, trails_results: Collection[dic
     experiment_results_folder_path.mkdir(parents=False, exist_ok=False)
     experiment_results_df.to_csv(experiment_results_folder_path / 'results.csv', index=False)
     experiment_results_df.to_html(experiment_results_folder_path / 'results.html', index=False)
-    with open(experiment_results_folder_path / 'experiment_details.json') as f:
+    with open(experiment_results_folder_path / 'experiment_details.json', 'w') as f:
         json.dump(experiment_details, f, indent=4)
 
 
@@ -127,9 +129,16 @@ def get_experiment_results_folder_path(experiment_id) -> Path:
 
 
 if __name__ == '__main__':
+    # run_experiment(
+    #     rules='all',
+    #     top_ns=(8, 9),
+    #     distortion_ratios=(0.1, 0.25, 0.5),
+    #     eval_iterations_per_rule=20,
+    #     random_seed=42
+    # )
     run_experiment(
         rules='all',
-        top_ns=(8, 9),
+        top_ns=(9,),
         distortion_ratios=(0.1, 0.25, 0.5),
         eval_iterations_per_rule=20,
         random_seed=42

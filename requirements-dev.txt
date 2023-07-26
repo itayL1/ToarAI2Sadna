@@ -4,3 +4,4 @@ dask
 matplotlib
 seaborn
 jupyter
+pyrankvote

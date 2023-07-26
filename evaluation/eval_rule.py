@@ -7,10 +7,13 @@ from compsoc.profile import Profile
 from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile
 from tqdm import tqdm
 
+from rules.random_rule import random_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
+from rules.k_approval_rule_submission_version import k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.simpson_rule import simpson_rule
+from rules.stv_rule import stv_rule
 from rules.veto_rule import veto_rule
 from utils.random_utils import set_global_random_seed
 
@@ -84,7 +87,7 @@ if __name__ == '__main__':
         rule_func=veto_rule,
         topn=9, # not sure yet
         distortion_ratio=0.5, # not sure yet
-        eval_iterations_count=10,
+        eval_iterations_count=20,
         random_seed=42,
         print_results=True,
         show_progress_bar=True,

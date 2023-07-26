@@ -1,6 +1,6 @@
 from compsoc.profile import Profile
 
-K = 4
+K = 9
 
 
 def k_approval_rule(profile: Profile, candidate: int) -> int:
