@@ -27,16 +27,14 @@ def _clac_kemeny_scores(candidates, pairs):
     for permutation in tqdm(all_permutations, total=math.factorial(num_candidates), desc="kemeny_rule main loop"):
         distance = 0
         for frequency, ballot in pairs:
-            # filled_ballot = tuple(list(ballot) + [c for c in permutation if c not in ballot])
-            filled_ballot = ballot
 
             # Calculate the Kendall tau distance between ballot and permutation
-            n = len(filled_ballot)
+            n = len(ballot)
             tau_distance = 0
             for i in range(n):
                 for j in range(i + 1, n):
-                    if (filled_ballot[i] < filled_ballot[j] and permutation[i] > permutation[j]) or (
-                            filled_ballot[i] > filled_ballot[j] and permutation[i] < permutation[j]):
+                    if (ballot[i] < ballot[j] and permutation[i] > permutation[j]) or (
+                            ballot[i] > ballot[j] and permutation[i] < permutation[j]):
                         tau_distance += 1
 
             distance += tau_distance * frequency
