@@ -1,24 +1,17 @@
-import random
-from typing import Callable, Collection, Optional
+from typing import Callable, Optional
 
-import numpy as np
 import pandas as pd
 from compsoc.evaluate import get_rule_utility
 from compsoc.profile import Profile
 from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile
 from tqdm import tqdm
 
-from rules.borda_gamma_rule import borda_gamma_rule
-from rules.borda_rule import borda_rule
-from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
-from rules.idea import idea_rule
-from rules.k_approval_rule import k_approval_rule
 from rules.maximin_rule import maximin_rule
-from rules.plurality_rule import plurality_rule
 from rules.simpson_rule import simpson_rule
 from rules.veto_rule import veto_rule
+from utils.random_utils import set_global_random_seed
 
 
 def eval_rule(
@@ -31,7 +24,7 @@ def eval_rule(
     verbose: bool = False
 ):
     if random_seed is not None:
-        _set_global_random_seed(random_seed)
+        set_global_random_seed(random_seed)
 
     iterations_results = []
     pbar_base_message = "eval iterations progress"
@@ -56,11 +49,6 @@ def eval_rule(
     return iterations_results_df
 
 
-def _set_global_random_seed(random_seed: int):
-    random.seed(random_seed)
-    np.random.seed(random_seed)
-
-
 def _generate_eval_profile(distortion_ratio: float) -> Profile:
     pair_tuples = generate_random_votes(number_voters=1_000, number_candidates=20)
     pair_tuples_set = set(pair_tuples)
@@ -81,7 +69,7 @@ if __name__ == '__main__':
     # * borda_rule: ~4,727 - ~4801
 
     eval_rule(
-        rule_func=idea_rule,
+        rule_func=veto_rule,
         topn=9, # not sure yet
         distortion_ratio=0.5, # not sure yet
         eval_iterations_count=10,

@@ -5,11 +5,10 @@ from functools import lru_cache
 from compsoc.profile import Profile
 from tqdm import tqdm
 
-from rules.borda_gamma_rule import borda_gamma_rule
 from rules.borda_rule import borda_rule
 from rules.chatGPTs_kemeny_rule import kemeny_rule
 from rules.copeland_rule import copeland_rule
-from rules.k_approval_rule import k_approval_rule
+from rules.k_approval_rule_submission_version import k_approval_rule
 from rules.plurality_rule import plurality_rule
 from rules.veto_rule import veto_rule
 
