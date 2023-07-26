@@ -114,12 +114,16 @@ def _store_experiment_results(experiment_id: str, trails_results: Collection[dic
         all_trails_results_dfs.append(trail_results_df)
     experiment_results_df = pd.concat(all_trails_results_dfs)
 
-    experiment_results_folder_path = Path(__file__).parent / 'results' / experiment_id
+    experiment_results_folder_path = get_experiment_results_folder_path(experiment_id)
     experiment_results_folder_path.mkdir(parents=False, exist_ok=False)
     experiment_results_df.to_csv(experiment_results_folder_path / 'results.csv', index=False)
     experiment_results_df.to_html(experiment_results_folder_path / 'results.html', index=False)
     with open(experiment_results_folder_path / 'experiment_details.json') as f:
         json.dump(experiment_details, f, indent=4)
+
+
+def get_experiment_results_folder_path(experiment_id) -> Path:
+    return Path(__file__).parent / 'results' / experiment_id
 
 
 if __name__ == '__main__':

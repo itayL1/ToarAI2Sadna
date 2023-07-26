@@ -1,3 +1,6 @@
 urllib3==1.26.6
 requests
 dask
+matplotlib
+seaborn
+jupyter
