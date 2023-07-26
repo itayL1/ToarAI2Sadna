@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Callable, Optional
 
 import pandas as pd
@@ -21,6 +22,7 @@ def eval_rule(
     eval_iterations_count: int,
     random_seed: Optional[int] = None,
     print_results: bool = False,
+    show_progress_bar: bool = False,
     verbose: bool = False
 ):
     if random_seed is not None:
@@ -28,7 +30,7 @@ def eval_rule(
 
     iterations_results = []
     pbar_base_message = "eval iterations progress"
-    with tqdm(total=eval_iterations_count, desc=pbar_base_message) as pbar:
+    with _open_progress_bar_if_needed(show_progress_bar, total=eval_iterations_count, desc=pbar_base_message) as pbar:
         for i in range(eval_iterations_count):
             profile = _generate_eval_profile(distortion_ratio)
             iteration_results = get_rule_utility(
@@ -37,9 +39,10 @@ def eval_rule(
                 topn=topn,
                 verbose=verbose
             )
-            pbar.update()
-            pbar.set_description(f"{pbar_base_message} (last iteration results: {iteration_results})")
             iterations_results.append({'iter_index': i, **iteration_results})
+            if pbar:
+                pbar.update()
+                pbar.set_description(f"{pbar_base_message} (last iteration results: {iteration_results})")
     iterations_results_df = pd.DataFrame(iterations_results)
 
     if print_results:
@@ -47,6 +50,15 @@ def eval_rule(
               f"\n\n\n{_titled('iteration results stats:')}\n\n{iterations_results_df.describe().round(1)}")
 
     return iterations_results_df
+
+
+@contextmanager
+def _open_progress_bar_if_needed(open_progress_bar: bool, **pbar_params):
+    if open_progress_bar:
+        with tqdm(**pbar_params) as pbar:
+            yield pbar
+    else:
+        yield None
 
 
 def _generate_eval_profile(distortion_ratio: float) -> Profile:
@@ -75,5 +87,6 @@ if __name__ == '__main__':
         eval_iterations_count=10,
         random_seed=42,
         print_results=True,
+        show_progress_bar=True,
         verbose=False
     )
