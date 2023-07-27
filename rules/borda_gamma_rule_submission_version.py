@@ -1,10 +1,11 @@
 from compsoc.profile import Profile
 
+GAMMA = 0.1
 
-def borda_rule(profile: Profile, candidate: int) -> int:
-    top_score = len(profile.candidates) - 1
+
+def borda_gamma_rule(profile: Profile, candidate: int) -> int:
     scores = [
-        frequency * (top_score - ballot.index(candidate))
+        frequency * (GAMMA ** ballot.index(candidate))
         for frequency, ballot in profile.pairs
         if candidate in ballot
     ]
