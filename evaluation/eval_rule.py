@@ -65,7 +65,7 @@ def _open_progress_bar_if_needed(open_progress_bar: bool, **pbar_params):
 
 
 def _generate_eval_profile(distortion_ratio: float) -> Profile:
-    pair_tuples = generate_random_votes(number_voters=1_000, number_candidates=20)
+    pair_tuples = generate_random_votes(number_voters=10_000, number_candidates=100)
     pair_tuples_set = set(pair_tuples)
     assert len(pair_tuples) == len(pair_tuples_set)
     profile = Profile(pairs=pair_tuples_set)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # * borda_rule: ~4,727 - ~4801
 
     eval_rule(
-        rule_func=veto_rule,
+        rule_func=k_approval_rule,
         topn=9, # not sure yet
         distortion_ratio=0.5, # not sure yet
         eval_iterations_count=20,
