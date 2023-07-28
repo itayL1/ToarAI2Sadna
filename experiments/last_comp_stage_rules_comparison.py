@@ -4,6 +4,7 @@ from typing import Collection, Union, Literal, Optional, Set, List
 from uuid import uuid4
 
 import dask
+import math
 import pandas as pd
 from dask.diagnostics import ProgressBar
 
@@ -29,21 +30,21 @@ RULE_NAME_TO_FUNC = {
     'simpson': simpson_rule,
     'veto': veto_rule,
     'random': random_rule,
-    # **{
-    #     f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
-    #     for gamma in (0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.25)
-    # },
-    # **{
-    #     f'k_approval_k_{k}': build_k_approval_rule(k)
-    #     for k in (2, 3, 4, 5, 6, 7, 8, 9)
-    # },
+    **{
+        f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
+        for gamma in (0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.25)
+    },
+    **{
+        f'k_approval_k_{k}': build_k_approval_rule(k)
+        for k in (2, 3, 4, 9)
+    },
 }
 
 
 def run_experiment(
     rules: Union[Literal['all'], Set[str]],
     voter_models: Collection[str],
-    top_ns: Collection[int],
+    top_n_percs: Collection[float],
     numbers_voters: Collection[int],
     numbers_candidates: Collection[int],
     distortion_ratios: Collection[float],
@@ -59,15 +60,23 @@ def run_experiment(
         raise ValueError(f"unexpected rules param type: {type(rules)}")
 
     trails_params = [
-        dict(voters_model=voter_model, number_voters=number_voters, number_candidates=number_candidates,
-             distortion_ratio=distortion_ratio, topn=topn, rule_name=rule_name)
+        dict(
+            voters_model=voter_model,
+            number_voters=number_voters,
+            number_candidates=number_candidates,
+            distortion_ratio=distortion_ratio,
+            topn_perc=topn_perc,
+            topn_actual=math.ceil(number_candidates * (topn_perc / 100)),
+            rule_name=rule_name
+        )
         for rule_name in rules
         for voter_model in voter_models
-        for topn in top_ns
+        for topn_perc in top_n_percs
         for number_voters in numbers_voters
         for number_candidates in numbers_candidates
         for distortion_ratio in distortion_ratios
     ]
+    trails_params = [tp for tp in trails_params if tp['topn_actual'] > 0]
     trails_results = _run_trails_in_parallel(trails_params, eval_iterations_per_rule, random_seed)
 
     _store_experiment_results(experiment_id, trails_results, experiment_extra_details=dict(
@@ -93,7 +102,7 @@ def _run_trails_in_parallel(trails_params: List[dict], eval_iterations_per_rule:
 def _run_trail_task(trail_params: dict, eval_iterations_per_rule: int, random_seed: Optional[int]) -> dict:
     rule_name = trail_params['rule_name']
     voters_model = trail_params['voters_model']
-    topn = trail_params['topn']
+    topn = trail_params['topn_actual']
     number_candidates = trail_params['number_candidates']
     number_voters = trail_params['number_voters']
     distortion_ratio = trail_params['distortion_ratio']
@@ -161,9 +170,9 @@ if __name__ == '__main__':
     run_experiment(
         rules={'plurality', 'borda', 'veto'},
         voter_models=('random', 'gaussian', 'multinomial_dirichlet'),
-        top_ns=(9,),
+        top_n_percs=(20, 40, 60, 80),
         numbers_voters=(1_000,),
-        numbers_candidates=(2,),
+        numbers_candidates=(5,),
         distortion_ratios=(0.2, 0.5),
         eval_iterations_per_rule=2,
         random_seed=42

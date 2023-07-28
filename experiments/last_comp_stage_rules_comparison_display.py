@@ -16,15 +16,15 @@ def display_experiment_results(experiment_id: str):
 
 def _plot_main_rules_performance_comparison_graph(experiment_results_df: pd.DataFrame):
     topn_stats_per_eval_subgroup_df = experiment_results_df\
-        .groupby(['topn', 'distortion_ratio', 'rule_name'])\
+        .groupby(['topn_actual', 'topn_perc', 'distortion_ratio', 'rule_name'])\
         .agg({"score": [np.mean, np.std]})\
         .reset_index()
     topn_stats_per_eval_subgroup_df['score_mean'] = topn_stats_per_eval_subgroup_df['score']['mean']
     topn_stats_per_eval_subgroup_df['score_std'] = topn_stats_per_eval_subgroup_df['score']['std']
     topn_stats_per_eval_subgroup_df.drop(columns=['score'], inplace=True)
 
-    for (topn, distortion_ratio), rule_stats_df in topn_stats_per_eval_subgroup_df.groupby(['topn', 'distortion_ratio']):
-        comparison_title = f"Rule scores results comparison (topn={topn}, distortion_ratio={distortion_ratio})"
+    for (topn_actual, topn_perc, distortion_ratio), rule_stats_df in topn_stats_per_eval_subgroup_df.groupby(['topn_actual', 'topn_perc', 'distortion_ratio']):
+        comparison_title = f"Rule scores results comparison (topn = {topn_actual}[{topn_perc}%], distortion_ratio = {distortion_ratio})"
         display(HTML(f"<h2>*** {comparison_title} ***</h2>"))
 
         rule_stats_sorted_df = rule_stats_df.sort_values(by='score_mean', ascending=False)
@@ -44,7 +44,12 @@ def _plot_main_rules_performance_comparison_graph(experiment_results_df: pd.Data
         plt.show()
         plt.close()
 
-        display(rule_stats_sorted_df.round(1))
+        display_rule_stats_sorted_df = rule_stats_sorted_df.copy()
+        display_rule_stats_sorted_df['topn'] = \
+            display_rule_stats_sorted_df['topn_actual'].astype(str) + ' (' +\
+            display_rule_stats_sorted_df['topn_perc'].astype(str) + '%)'
+        display_rule_stats_sorted_df.drop(columns=['topn_actual', 'topn_perc'], inplace=True)
+        display(display_rule_stats_sorted_df.round(1))
 
 
 if __name__ == '__main__':
