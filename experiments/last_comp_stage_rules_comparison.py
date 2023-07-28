@@ -6,21 +6,22 @@ from uuid import uuid4
 import dask
 import math
 import pandas as pd
+from compsoc.evaluate import get_rule_utility
 from dask.diagnostics import ProgressBar
 
-from evaluation.eval_rule import eval_rule
+from evaluation.eval_rule import generate_eval_profile
 from rules.borda_gamma_rule import build_borda_gamma_rule
 from rules.borda_rule import borda_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
-from rules.k_approval_rule import build_k_approval_rule
 from rules.k_approval_rule_percentage_version import build_k_approval_rule_percentage_version
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
 from rules.random_rule import random_rule
 from rules.simpson_rule import simpson_rule
+from rules.stv_rule_elishay import stv_rule_elishay
 from rules.veto_rule import veto_rule
-
+from utils.random_utils import set_global_random_seed
 
 RULE_NAME_TO_FUNC = {
     'borda': borda_rule,
@@ -30,6 +31,7 @@ RULE_NAME_TO_FUNC = {
     'plurality': plurality_rule,
     'simpson': simpson_rule,
     'veto': veto_rule,
+    'stv_rule_elishay': stv_rule_elishay,
     'random': random_rule,
     **{
         f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
@@ -60,24 +62,33 @@ def run_experiment(
     elif not isinstance(rules, set):
         raise ValueError(f"unexpected rules param type: {type(rules)}")
 
-    trails_params = [
+    trails_dataset_setups = [
         dict(
             voters_model=voter_model,
             number_voters=number_voters,
             number_candidates=number_candidates,
-            distortion_ratio=distortion_ratio,
-            topn_perc=topn_perc,
-            topn_actual=math.ceil(number_candidates * (topn_perc / 100)),
-            rule_name=rule_name
+            distortion_ratio=distortion_ratio
         )
-        for rule_name in rules
         for voter_model in voter_models
-        for topn_perc in top_n_percs
         for number_voters in numbers_voters
         for number_candidates in numbers_candidates
         for distortion_ratio in distortion_ratios
     ]
-    trails_params = [tp for tp in trails_params if tp['topn_actual'] > 0]
+    trails_params = [
+        dict(
+            dataset_setup=dataset_setup,
+            evaluation_params=[
+                dict(
+                    rule_name=rule_name,
+                    topn_perc=topn_perc,
+                    topn_actual=math.ceil(dataset_setup['number_candidates'] * (topn_perc / 100)),
+                )
+                for rule_name in rules
+                for topn_perc in top_n_percs
+            ]
+        )
+        for dataset_setup in trails_dataset_setups
+    ]
     trails_results = _run_trails_in_parallel(trails_params, eval_iterations_per_rule, random_seed)
 
     _store_experiment_results(experiment_id, trails_results, experiment_extra_details=dict(
@@ -91,7 +102,7 @@ def _run_trails_in_parallel(trails_params: List[dict], eval_iterations_per_rule:
 
     delayed_results = []
     for trail_params in trails_params:
-        trail_task = dask.delayed(_run_trail_task)(
+        trail_task = dask.delayed(_run_dataset_trails_task)(
             trail_params=trail_params, eval_iterations_per_rule=eval_iterations_per_rule, random_seed=random_seed
         )
         delayed_results.append(trail_task)
@@ -100,45 +111,51 @@ def _run_trails_in_parallel(trails_params: List[dict], eval_iterations_per_rule:
     return trails_results
 
 
-def _run_trail_task(trail_params: dict, eval_iterations_per_rule: int, random_seed: Optional[int]) -> dict:
-    rule_name = trail_params['rule_name']
-    voters_model = trail_params['voters_model']
-    topn = trail_params['topn_actual']
-    number_candidates = trail_params['number_candidates']
-    number_voters = trail_params['number_voters']
-    distortion_ratio = trail_params['distortion_ratio']
+def _run_dataset_trails_task(trail_params: dict, eval_iterations_per_rule: int, random_seed: Optional[int]) -> dict:
+    if random_seed is not None:
+        set_global_random_seed(random_seed)
 
-    assert rule_name in RULE_NAME_TO_FUNC, f"unknown rule: '{rule_name}'"
-    rule_func = RULE_NAME_TO_FUNC[rule_name]
+    iteration_trails_results = []
+    for i in range(eval_iterations_per_rule):
+        dataset_profile = generate_eval_profile(**trail_params['dataset_setup'])
 
-    trail_results_df = eval_rule(
-        rule_func=rule_func,
-        topn=topn,
-        voters_model=voters_model,
-        number_voters=number_voters,
-        number_candidates=number_candidates,
-        distortion_ratio=distortion_ratio,
-        eval_iterations_count=eval_iterations_per_rule,
-        random_seed=random_seed,
-        print_results=False,
-        verbose=False
-    )
+        for eval_params in trail_params['evaluation_params']:
+            rule_name = eval_params['rule_name']
+            topn = eval_params['topn_actual']
 
-    ret = dict(trail_params=trail_params, trail_results_df=trail_results_df)
-    return ret
+            should_skip_trail = topn == 0
+            if should_skip_trail:
+                continue
+
+            assert rule_name in RULE_NAME_TO_FUNC, f"unknown rule: '{rule_name}'"
+            rule_func = RULE_NAME_TO_FUNC[rule_name]
+            iteration_results = get_rule_utility(
+                profile=dataset_profile,
+                rule=rule_func,
+                topn=topn,
+                verbose=False
+            )
+            iteration_trails_results.append({**eval_params, 'eval_iter_index': i, 'score': iteration_results['topn']})
+        iteration_trails_results_df = pd.DataFrame(data=iteration_trails_results)
+
+        ret = dict(dataset_setup=trail_params['dataset_setup'], iteration_trails_results_df=iteration_trails_results_df)
+        return ret
 
 
 def _store_experiment_results(experiment_id: str, trails_results: Collection[dict], experiment_extra_details: dict):
     all_trails_dfs = []
     for trail_results in trails_results:
-        trail_params = trail_results['trail_params']
-        trail_results_df = trail_results['trail_results_df']
-        trail_params_and_results_df = trail_results_df.copy()
-        for param_name, param_val in trail_params.items():
-            trail_params_and_results_df[param_name] = param_val
-        columns_order = list(trail_params.keys()) + ['eval_iter_index', 'score']
-        trail_params_and_results_df = trail_params_and_results_df[columns_order]
-        all_trails_dfs.append(trail_params_and_results_df)
+        dataset_setup = trail_results['dataset_setup']
+        iteration_trails_results_df = trail_results['iteration_trails_results_df']
+
+        iteration_trails_results_df = iteration_trails_results_df.copy()
+        for param_name, param_val in dataset_setup.items():
+            iteration_trails_results_df[param_name] = param_val
+
+        iteration_trails_results_df = _reorder_results_df_columns(
+            iteration_trails_results_df, dataset_setup_columns=dataset_setup.keys())
+
+        all_trails_dfs.append(iteration_trails_results_df)
     experiment_results_df = pd.concat(all_trails_dfs)
 
     experiment_results_folder_path = get_experiment_results_folder_path(experiment_id)
@@ -149,32 +166,32 @@ def _store_experiment_results(experiment_id: str, trails_results: Collection[dic
         json.dump(experiment_extra_details, f, indent=4)
 
 
+def _reorder_results_df_columns(
+        iteration_trails_results_df: pd.DataFrame, dataset_setup_columns: Collection[str]
+) -> pd.DataFrame:
+    first_columns = list(dataset_setup_columns)
+    last_columns = ['eval_iter_index', 'score']
+    other_columns = [
+        col for col in iteration_trails_results_df.columns
+        if col not in (first_columns + last_columns)
+    ]
+    columns_order = first_columns + other_columns + last_columns
+    iteration_trails_results_df = iteration_trails_results_df[columns_order]
+    return iteration_trails_results_df
+
+
 def get_experiment_results_folder_path(experiment_id) -> Path:
     return Path(__file__).parent / 'results' / experiment_id
 
 
 if __name__ == '__main__':
-    # run_experiment(
-    #     rules='all',
-    #     top_ns=(8, 9),
-    #     distortion_ratios=(0.1, 0.25, 0.5),
-    #     eval_iterations_per_rule=20,
-    #     random_seed=42
-    # )
-    # run_experiment(
-    #     rules='all',
-    #     top_ns=(9,),
-    #     distortion_ratios=(0.1, 0.25, 0.5),
-    #     eval_iterations_per_rule=20,
-    #     random_seed=42
-    # )
     run_experiment(
-        rules={'plurality', 'borda', 'veto'},
+        rules='all',
         voter_models=('random', 'gaussian', 'multinomial_dirichlet'),
         top_n_percs=(20, 40, 60, 80),
-        numbers_voters=(1_000,),
-        numbers_candidates=(5,),
-        distortion_ratios=(0.2, 0.5),
-        eval_iterations_per_rule=2,
+        numbers_voters=(500, 1_000, 10_000),
+        numbers_candidates=(5, 10, 20, 40),
+        distortion_ratios=(0.1, 0.25, 0.5, 0.9),
+        eval_iterations_per_rule=15,
         random_seed=42
     )

@@ -14,6 +14,7 @@ from rules.k_approval_rule_submission_version import k_approval_rule
 from rules.maximin_rule import maximin_rule
 from rules.simpson_rule import simpson_rule
 from rules.stv_rule import stv_rule
+from rules.stv_rule_elishay import stv_rule_elishay
 from rules.veto_rule import veto_rule
 from utils.random_utils import set_global_random_seed
 
@@ -40,7 +41,7 @@ def eval_rule(
     pbar_base_message = "eval iterations progress"
     with _open_progress_bar_if_needed(show_progress_bar, total=eval_iterations_count, desc=pbar_base_message) as pbar:
         for i in range(eval_iterations_count):
-            profile = _generate_eval_profile(
+            profile = generate_eval_profile(
                 voters_model, number_voters, number_candidates, distortion_ratio
             )
             iteration_results = get_rule_utility(
@@ -62,6 +63,12 @@ def eval_rule(
     return iterations_results_df
 
 
+def generate_eval_profile(voters_model: voter_model_names, number_voters: int, number_candidates: int, distortion_ratio: float) -> Profile:
+    profile = get_profile_from_model(number_candidates, number_voters, voters_model=voters_model, verbose=False)
+    distorted_profile = generate_distorted_from_normal_profile(profile, distortion_ratio)
+    return distorted_profile
+
+
 @contextmanager
 def _open_progress_bar_if_needed(open_progress_bar: bool, **pbar_params):
     if open_progress_bar:
@@ -69,12 +76,6 @@ def _open_progress_bar_if_needed(open_progress_bar: bool, **pbar_params):
             yield pbar
     else:
         yield None
-
-
-def _generate_eval_profile(voters_model: voter_model_names, number_voters: int, number_candidates: int, distortion_ratio: float) -> Profile:
-    profile = get_profile_from_model(number_candidates, number_voters, voters_model='random', verbose=False)
-    distorted_profile = generate_distorted_from_normal_profile(profile, distortion_ratio)
-    return distorted_profile
 
 
 def _titled(text: str) -> str:
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     # * borda_rule: ~4,727 - ~4801
 
     eval_rule(
-        rule_func=k_approval_rule,
+        rule_func=stv_rule_elishay,
         topn=9, # not sure yet
         voters_model='random',
         number_voters=1_000,
