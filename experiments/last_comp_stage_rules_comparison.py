@@ -14,6 +14,7 @@ from rules.borda_rule import borda_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
 from rules.k_approval_rule import build_k_approval_rule
+from rules.k_approval_rule_percentage_version import build_k_approval_rule_percentage_version
 from rules.maximin_rule import maximin_rule
 from rules.plurality_rule import plurality_rule
 from rules.random_rule import random_rule
@@ -35,8 +36,8 @@ RULE_NAME_TO_FUNC = {
         for gamma in (0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.25)
     },
     **{
-        f'k_approval_k_{k}': build_k_approval_rule(k)
-        for k in (2, 3, 4, 9)
+        f'k_approval_{perc}%': build_k_approval_rule_percentage_version(perc)
+        for perc in (5, 10, 20, 40, 80)
     },
 }
 
