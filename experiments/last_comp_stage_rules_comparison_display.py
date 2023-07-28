@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,31 +15,23 @@ def display_experiment_results(experiment_id: str):
 
 
 def _plot_main_rules_performance_comparison_graph(experiment_results_df: pd.DataFrame):
-    experiment_results_df = experiment_results_df.copy()
-    experiment_results_df['rule_name'] = \
-        experiment_results_df['trail_params'].apply(lambda trail_params_json: json.loads(trail_params_json)['rule_name'])
-    experiment_results_df['eval_topn'] = \
-        experiment_results_df['trail_params'].apply(lambda trail_params_json: json.loads(trail_params_json)['topn'])
-    experiment_results_df['distortion_ratio'] = \
-        experiment_results_df['trail_params'].apply(lambda trail_params_json: json.loads(trail_params_json)['distortion_ratio'])
-
     topn_stats_per_eval_subgroup_df = experiment_results_df\
-        .groupby(['eval_topn', 'distortion_ratio', 'rule_name'])\
-        .agg({"topn": [np.mean, np.std]})\
+        .groupby(['topn', 'distortion_ratio', 'rule_name'])\
+        .agg({"score": [np.mean, np.std]})\
         .reset_index()
-    topn_stats_per_eval_subgroup_df['topn_mean'] = topn_stats_per_eval_subgroup_df['topn']['mean']
-    topn_stats_per_eval_subgroup_df['topn_std'] = topn_stats_per_eval_subgroup_df['topn']['std']
-    topn_stats_per_eval_subgroup_df.drop(columns=['topn'], inplace=True)
+    topn_stats_per_eval_subgroup_df['score_mean'] = topn_stats_per_eval_subgroup_df['score']['mean']
+    topn_stats_per_eval_subgroup_df['score_std'] = topn_stats_per_eval_subgroup_df['score']['std']
+    topn_stats_per_eval_subgroup_df.drop(columns=['score'], inplace=True)
 
-    for (eval_topn, distortion_ratio), rule_stats_df in topn_stats_per_eval_subgroup_df.groupby(['eval_topn', 'distortion_ratio']):
-        comparison_title = f"Rule scores results comparison (topn={eval_topn}, distortion_ratio={distortion_ratio})"
+    for (topn, distortion_ratio), rule_stats_df in topn_stats_per_eval_subgroup_df.groupby(['topn', 'distortion_ratio']):
+        comparison_title = f"Rule scores results comparison (topn={topn}, distortion_ratio={distortion_ratio})"
         display(HTML(f"<h2>*** {comparison_title} ***</h2>"))
 
-        rule_stats_sorted_df = rule_stats_df.sort_values(by='topn_mean', ascending=False)
+        rule_stats_sorted_df = rule_stats_df.sort_values(by='score_mean', ascending=False)
 
         x = list(rule_stats_sorted_df['rule_name'])
-        y = list(rule_stats_sorted_df['topn_mean'])
-        yerr = list(rule_stats_sorted_df['topn_std'])
+        y = list(rule_stats_sorted_df['score_mean'])
+        yerr = list(rule_stats_sorted_df['score_std'])
         rule_stats_df.sort_values(by='rule_name')
 
         plt.rcParams["figure.figsize"] = (12, 4)
@@ -54,7 +44,7 @@ def _plot_main_rules_performance_comparison_graph(experiment_results_df: pd.Data
         plt.show()
         plt.close()
 
-        display(rule_stats_sorted_df[['rule_name', 'topn_mean', 'topn_std']].round(1))
+        display(rule_stats_sorted_df.round(1))
 
 
 if __name__ == '__main__':

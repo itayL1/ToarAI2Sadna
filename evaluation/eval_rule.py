@@ -1,10 +1,10 @@
 from contextlib import contextmanager
-from typing import Callable, Optional
+from typing import Callable, Optional, Literal
 
 import pandas as pd
 from compsoc.evaluate import get_rule_utility
 from compsoc.profile import Profile
-from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile
+from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile, get_profile_from_model
 from tqdm import tqdm
 
 from rules.random_rule import random_rule
@@ -17,10 +17,15 @@ from rules.stv_rule import stv_rule
 from rules.veto_rule import veto_rule
 from utils.random_utils import set_global_random_seed
 
+voter_model_names = Literal['random'] | Literal['gaussian'] | Literal['multinomial_dirichlet']
+
 
 def eval_rule(
     rule_func: Callable[[Profile, int], int],
     topn: int,
+    voters_model: voter_model_names,
+    number_voters: int,
+    number_candidates: int,
     distortion_ratio: float,
     eval_iterations_count: int,
     random_seed: Optional[int] = None,
@@ -35,14 +40,16 @@ def eval_rule(
     pbar_base_message = "eval iterations progress"
     with _open_progress_bar_if_needed(show_progress_bar, total=eval_iterations_count, desc=pbar_base_message) as pbar:
         for i in range(eval_iterations_count):
-            profile = _generate_eval_profile(distortion_ratio)
+            profile = _generate_eval_profile(
+                voters_model, number_voters, number_candidates, distortion_ratio
+            )
             iteration_results = get_rule_utility(
                 profile=profile,
                 rule=rule_func,
                 topn=topn,
                 verbose=verbose
             )
-            iterations_results.append({'iter_index': i, **iteration_results})
+            iterations_results.append({'eval_iter_index': i, 'score': iteration_results['topn']})
             if pbar:
                 pbar.update()
                 pbar.set_description(f"{pbar_base_message} (last iteration results: {iteration_results})")
@@ -64,11 +71,8 @@ def _open_progress_bar_if_needed(open_progress_bar: bool, **pbar_params):
         yield None
 
 
-def _generate_eval_profile(distortion_ratio: float) -> Profile:
-    pair_tuples = generate_random_votes(number_voters=10_000, number_candidates=100)
-    pair_tuples_set = set(pair_tuples)
-    assert len(pair_tuples) == len(pair_tuples_set)
-    profile = Profile(pairs=pair_tuples_set)
+def _generate_eval_profile(voters_model: voter_model_names, number_voters: int, number_candidates: int, distortion_ratio: float) -> Profile:
+    profile = get_profile_from_model(number_candidates, number_voters, voters_model='random', verbose=False)
     distorted_profile = generate_distorted_from_normal_profile(profile, distortion_ratio)
     return distorted_profile
 
@@ -86,6 +90,9 @@ if __name__ == '__main__':
     eval_rule(
         rule_func=k_approval_rule,
         topn=9, # not sure yet
+        voters_model='random',
+        number_voters=1_000,
+        number_candidates=20,
         distortion_ratio=0.5, # not sure yet
         eval_iterations_count=20,
         random_seed=42,
