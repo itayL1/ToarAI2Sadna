@@ -97,7 +97,7 @@ def run_experiment(
 
 
 def _run_trails_in_parallel(trails_params: List[dict], eval_iterations_per_rule: int, random_seed: Optional[int]) -> Collection[dict]:
-    print(f"starting to run requested trails in parallel. total number of trails: {len(trails_params)}.")
+    _write_jobs_stats_opening_message(trails_params)
     ProgressBar().register()
 
     delayed_results = []
@@ -109,6 +109,16 @@ def _run_trails_in_parallel(trails_params: List[dict], eval_iterations_per_rule:
 
     trails_results = dask.compute(*delayed_results)
     return trails_results
+
+
+def _write_jobs_stats_opening_message(trails_params: List[dict]):
+    jobs_count = len(trails_params)
+    total_trails_count = sum(len(tp['evaluation_params']) for tp in trails_params)
+    trails_per_job = round(total_trails_count / jobs_count, 2)
+    print(
+        f"starting to run requested trails in parallel. total number of jobs: {jobs_count}. "
+        f"total number of trails: {total_trails_count} (trails per job: ~{trails_per_job})."
+    )
 
 
 def _run_dataset_trails_task(trail_params: dict, eval_iterations_per_rule: int, random_seed: Optional[int]) -> dict:
@@ -136,6 +146,8 @@ def _run_dataset_trails_task(trail_params: dict, eval_iterations_per_rule: int, 
                 verbose=False
             )
             iteration_trails_results.append({**eval_params, 'eval_iter_index': i, 'score': iteration_results['topn']})
+
+        assert any(iteration_trails_results), "empty results are unexpected"
         iteration_trails_results_df = pd.DataFrame(data=iteration_trails_results)
 
         ret = dict(dataset_setup=trail_params['dataset_setup'], iteration_trails_results_df=iteration_trails_results_df)
