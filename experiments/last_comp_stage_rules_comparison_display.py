@@ -1,8 +1,10 @@
 import json
 from collections import defaultdict
+from typing import List, Tuple, Collection
 
 import numpy as np
 import pandas as pd
+import datapane as dp
 import matplotlib.pyplot as plt
 from IPython.core.display import HTML
 from IPython.display import display
@@ -33,6 +35,8 @@ def display_experiment_results(experiment_id: str):
             voter_model_trails_df,
             graph_title=f"distribution_voter_model = '{distribution_voter_model}' trails"
         )
+
+    _show_trail_inferable_subgroup_to_best_rules(experiment_results_df)
 
     # _plot_dataset_setups_rules_performance_comparison_graphs(experiment_results_df)
 
@@ -78,13 +82,8 @@ def _plot_dataset_setups_rules_performance_comparison_graphs(experiment_results_
 
 def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, graph_title: str):
     _display_title(graph_title, main_else_secondary=True)
-    score_stats_per_subgroup_df = relevant_results_df \
-        .groupby(by=[*DATASET_SETUP_DETAILS_COLUMNS, 'rule_name']) \
-        .agg({"score": [np.mean, np.std]}) \
-        .reset_index()
-    score_stats_per_subgroup_df['score_mean'] = score_stats_per_subgroup_df['score']['mean']
-    score_stats_per_subgroup_df['score_std'] = score_stats_per_subgroup_df['score']['std']
-    score_stats_per_subgroup_df.drop(columns=['score'], inplace=True)
+    score_stats_per_subgroup_df = _results_to_score_stats_per_subgroup(
+        relevant_results_df, subgroup_columns=DATASET_SETUP_DETAILS_COLUMNS)
 
     # _display_title("top 3 wining rules per subgroup", main_else_secondary=False)
     # top3_winning_rules_per_subgroup_df = score_stats_per_subgroup_df\
@@ -125,18 +124,74 @@ def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, gra
     print(json.dumps(rule_to_mean_winnings_score, indent=4))
 
 
-def _calc_rule_to_winnings_score_in_trail_mean(group_df):
-    score_to_rules = defaultdict(list)
-    for _, row in group_df.iterrows():
-        score_to_rules[row['score_mean'][0]].append(row['rule_name'][0])
-    number_of_unique_scores = len(score_to_rules)
+def _results_to_score_stats_per_subgroup(
+    relevant_results_df: pd.DataFrame, subgroup_columns: Collection[str]
+) -> pd.DataFrame:
+    score_stats_per_subgroup_df = relevant_results_df \
+        .groupby(by=[*subgroup_columns, 'rule_name']) \
+        .agg({"score": [np.mean, np.std]}) \
+        .reset_index()
+    score_stats_per_subgroup_df['score_mean'] = score_stats_per_subgroup_df['score']['mean']
+    score_stats_per_subgroup_df['score_std'] = score_stats_per_subgroup_df['score']['std']
+    score_stats_per_subgroup_df.drop(columns=['score'], inplace=True)
+    return score_stats_per_subgroup_df
+
+
+def _calc_rule_to_winnings_score_in_trail_mean(trail_mean_df):
+    score_to_rules_ordered_by_score_desc = _calc_ordered_score_to_rules(trail_mean_df)
+
+    number_of_unique_scores = len(score_to_rules_ordered_by_score_desc)
     rule_name_to_winnings_score_0_to_1 = {
         rule_name: (number_of_unique_scores - rank_0_based) / number_of_unique_scores
         for rank_0_based, (score, rule_names) in
-        enumerate(sorted(list(score_to_rules.items()), key=lambda kvp: kvp[0], reverse=True))
+        enumerate(score_to_rules_ordered_by_score_desc)
         for rule_name in rule_names
     }
     return rule_name_to_winnings_score_0_to_1
+
+
+def _calc_ordered_score_to_rules(trail_mean_df) -> List[Tuple[float, List[str]]]:
+    score_to_rules = defaultdict(list)
+    for _, row in trail_mean_df.iterrows():
+        score_to_rules[row['score_mean'][0]].append(row['rule_name'][0])
+    score_to_rules_ordered_by_score_desc = sorted(list(score_to_rules.items()), key=lambda kvp: kvp[0], reverse=True)
+    return score_to_rules_ordered_by_score_desc
+
+
+def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame) -> pd.DataFrame:
+    inferable_subgroup_columns = _without(DATASET_SETUP_DETAILS_COLUMNS, ('voters_model', 'topn_perc', 'topn_actual'))
+    score_stats_per_subgroup_df = _results_to_score_stats_per_subgroup(
+        relevant_results_df, subgroup_columns=inferable_subgroup_columns
+    )
+
+    trail_subgroup_to_best_rules_rows = []
+    for group_key, trail_mean_df in score_stats_per_subgroup_df.groupby(by=[*inferable_subgroup_columns]):
+        score_to_rules_ordered_by_score_desc = _calc_ordered_score_to_rules(trail_mean_df)
+        best_trail_rules = score_to_rules_ordered_by_score_desc[0][1]
+
+        row_dict = {
+            **{
+                key_col: group_key[i]
+                for i, key_col in enumerate(inferable_subgroup_columns)
+            },
+            'best_rules': str(best_trail_rules)
+        }
+        trail_subgroup_to_best_rules_rows.append(row_dict)
+
+    inferable_subgroup_to_best_rules_df = pd.DataFrame(data=trail_subgroup_to_best_rules_rows)
+
+    _display_title("inferable_subgroup_to_best_rules_df", main_else_secondary=True)
+    display(dp.DataTable(inferable_subgroup_to_best_rules_df))
+
+    _display_title("subgroups_where_borda_desont_win_df", main_else_secondary=False)
+    subgroups_where_borda_desont_win_df = inferable_subgroup_to_best_rules_df[
+        ~inferable_subgroup_to_best_rules_df['best_rules'].str.contains("'borda'")
+    ]
+    display(dp.DataTable(subgroups_where_borda_desont_win_df))
+
+
+def _without(collection: Collection, excluded_items: Collection) -> list:
+    return [item for item in collection if item not in excluded_items]
 
 
 def _display_title(title_text: str, main_else_secondary: bool):
