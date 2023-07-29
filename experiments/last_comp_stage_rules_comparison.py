@@ -13,6 +13,7 @@ from tqdm import tqdm
 from evaluation.eval_rule import generate_eval_profile
 from rules.borda_gamma_rule import build_borda_gamma_rule
 from rules.borda_rule import borda_rule
+from rules.borda_veto_hybrid_rule import borda_veto_hybrid_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
 from rules.k_approval_rule_percentage_version import build_k_approval_rule_percentage_version
@@ -33,6 +34,7 @@ RULE_NAME_TO_FUNC = {
     'simpson': simpson_rule,
     'veto': veto_rule,
     'stv_rule_elishay': stv_rule_elishay,
+    'borda_veto_hybrid_rule': borda_veto_hybrid_rule,
     'random': random_rule,
     **{
         f'borda_gamma_{gamma}': build_borda_gamma_rule(gamma)
@@ -261,12 +263,13 @@ def get_experiment_results_folder_path(experiment_id) -> Path:
 if __name__ == '__main__':
     run_experiment(
         rules='all',
+        # rules={'borda_veto_hybrid_rule'},
         voter_models=('random', 'gaussian', 'multinomial_dirichlet'),
         top_n_percs=(20, 40, 60, 80),
         numbers_voters=(500, 1_000, 10_000),
         numbers_candidates=(5, 10, 20, 40),
-        # distortion_ratios=(0.1, 0.25, 0.5, 0.9),
-        distortion_ratios=(0.6, 0.7, 0.8),
+        distortion_ratios=(0.1, 0.25, 0.5, 0.6, 0.7, 0.8, 0.9),
+        # distortion_ratios=(0.6, 0.7, 0.8),
         eval_iterations_per_rule=15,
         run_trails_in_parallel=True,
         random_seed=42

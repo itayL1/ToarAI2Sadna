@@ -38,7 +38,17 @@ def display_experiment_results(experiment_id: str):
 
     _show_trail_inferable_subgroup_to_best_rules(experiment_results_df)
 
-    # _plot_dataset_setups_rules_performance_comparison_graphs(experiment_results_df)
+    high_distortion_ratio_condition = experiment_results_df['distortion_ratio'] >= 0.8
+    high_distortion_ratio_subgroup_df = experiment_results_df[high_distortion_ratio_condition]
+    not_high_distortion_ratio_subgroup_df = experiment_results_df[~high_distortion_ratio_condition]
+    _plot_rules_winnings_comparison_graph(
+        high_distortion_ratio_subgroup_df,
+        graph_title=f"high distortion ratio trails"
+    )
+    _plot_rules_winnings_comparison_graph(
+        not_high_distortion_ratio_subgroup_df,
+        graph_title=f"not high distortion ratio trails"
+    )
 
 
 def _plot_dataset_setups_rules_performance_comparison_graphs(experiment_results_df: pd.DataFrame):
@@ -158,7 +168,7 @@ def _calc_ordered_score_to_rules(trail_mean_df) -> List[Tuple[float, List[str]]]
     return score_to_rules_ordered_by_score_desc
 
 
-def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame) -> pd.DataFrame:
+def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame):
     inferable_subgroup_columns = _without(DATASET_SETUP_DETAILS_COLUMNS, ('voters_model', 'topn_perc', 'topn_actual'))
     score_stats_per_subgroup_df = _results_to_score_stats_per_subgroup(
         relevant_results_df, subgroup_columns=inferable_subgroup_columns
@@ -183,11 +193,24 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
     _display_title("inferable_subgroup_to_best_rules_df", main_else_secondary=True)
     display(dp.DataTable(inferable_subgroup_to_best_rules_df))
 
-    _display_title("subgroups_where_borda_desont_win_df", main_else_secondary=False)
-    subgroups_where_borda_desont_win_df = inferable_subgroup_to_best_rules_df[
+    _display_title("subgroups_where_borda_doesnt_win_df", main_else_secondary=False)
+    subgroups_where_borda_doesnt_win_df = inferable_subgroup_to_best_rules_df[
         ~inferable_subgroup_to_best_rules_df['best_rules'].str.contains("'borda'")
     ]
-    display(dp.DataTable(subgroups_where_borda_desont_win_df))
+    display(dp.DataTable(subgroups_where_borda_doesnt_win_df))
+
+    _display_title("subgroups_with_high_distortion_ratio_df", main_else_secondary=False)
+    subgroups_with_high_distortion_ratio_df = inferable_subgroup_to_best_rules_df[
+        (inferable_subgroup_to_best_rules_df['distortion_ratio'] >= 0.6)
+    ]
+    subgroups_with_high_distortion_ratio_df = subgroups_with_high_distortion_ratio_df.copy()
+    subgroups_with_high_distortion_ratio_df['veto_wins'] =\
+        subgroups_with_high_distortion_ratio_df['best_rules'].str.contains("'veto'")
+    subgroups_with_high_distortion_ratio_df['borda_wins'] =\
+        subgroups_with_high_distortion_ratio_df['best_rules'].str.contains("'borda'")
+    subgroups_with_high_distortion_ratio_df['#winning_rules'] =\
+        subgroups_with_high_distortion_ratio_df['best_rules'].apply(lambda br: len(json.loads(br.replace("'", '"'))))
+    display(dp.DataTable(subgroups_with_high_distortion_ratio_df))
 
 
 def _without(collection: Collection, excluded_items: Collection) -> list:

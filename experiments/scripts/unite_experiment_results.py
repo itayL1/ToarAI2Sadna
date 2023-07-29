@@ -23,7 +23,7 @@ def unite_experiment_results(experiment_ids: Collection[str]):
 if __name__ == '__main__':
     unite_experiment_results(
         experiment_ids=(
-            '06d7546459494be9b40ebc6bd2de59b8',
-            'a091e1c4edeb4384beb67451ee7d5919',
+            '4d23b8e3c6574cdfa1b2b2c3099b1363',
+            '341f97a6841d4856b327e7f0935455a9',
         )
     )
