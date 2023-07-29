@@ -7,6 +7,7 @@ from compsoc.profile import Profile
 from compsoc.voter_model import generate_random_votes, generate_distorted_from_normal_profile, get_profile_from_model
 from tqdm import tqdm
 
+from rules.borda_veto_hybrid_rule import borda_veto_hybrid_rule
 from rules.random_rule import random_rule
 from rules.copeland_rule import copeland_rule
 from rules.dowdall_rule import dowdall_rule
@@ -108,7 +109,7 @@ if __name__ == '__main__':
     # * borda_rule: ~4,727 - ~4801
 
     eval_rule(
-        rule_func=stv_rule_elishay,
+        rule_func=borda_veto_hybrid_rule,
         topn=9, # not sure yet
         voters_model='random',
         number_voters=1_000,

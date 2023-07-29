@@ -4,14 +4,11 @@ BORDA_VETO_DISTORTION_RATIO_THRESHOLD = 0.8
 
 
 def borda_veto_hybrid_rule(profile: Profile, candidate: int) -> int:
-    # calculate the distortion ratio of this profile
-    ballots_lengths = [len(ballot) for _, ballot in profile.pairs]
-    assert len(set(ballots_lengths)) == 1, "expected all the ballot lengths to be equal"
-    ballots_length = ballots_lengths[0]
-    distortion_ratio = 1 - (ballots_length / len(profile.candidates))
-    assert 0 <= distortion_ratio <= 1, "got an unexpected result"
+    # calculate the distortion ratio of the profile
+    average_ballot_length = sum(len(ballot) for _, ballot in profile.pairs) / len(profile.pairs)
+    profile_distortion_ratio = 1 - (average_ballot_length / len(profile.candidates))
 
-    if distortion_ratio >= BORDA_VETO_DISTORTION_RATIO_THRESHOLD:
+    if profile_distortion_ratio >= BORDA_VETO_DISTORTION_RATIO_THRESHOLD:
         # veto rule:
         veto_score = 0
 
