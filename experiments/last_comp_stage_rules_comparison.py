@@ -56,7 +56,7 @@ def run_experiment(
     run_trails_in_parallel: bool,
     random_seed: Optional[int] = None
 ):
-    experiment_id = uuid4().hex
+    experiment_id = new_experiment_id()
     print(f"experiment_id: '{experiment_id}'")
 
     if rules == 'all':
@@ -101,6 +101,10 @@ def run_experiment(
     _store_experiment_results(experiment_id, trails_results, experiment_extra_details=dict(
         eval_iterations_per_rule=eval_iterations_per_rule, random_seed=random_seed
     ))
+
+
+def new_experiment_id():
+    return uuid4().hex
 
 
 def _run_trails(
@@ -261,7 +265,8 @@ if __name__ == '__main__':
         top_n_percs=(20, 40, 60, 80),
         numbers_voters=(500, 1_000, 10_000),
         numbers_candidates=(5, 10, 20, 40),
-        distortion_ratios=(0.1, 0.25, 0.5, 0.9),
+        # distortion_ratios=(0.1, 0.25, 0.5, 0.9),
+        distortion_ratios=(0.6, 0.7, 0.8),
         eval_iterations_per_rule=15,
         run_trails_in_parallel=True,
         random_seed=42
