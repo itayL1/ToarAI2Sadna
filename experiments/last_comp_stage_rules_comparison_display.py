@@ -51,59 +51,11 @@ def display_experiment_results(experiment_id: str):
     )
 
 
-def _plot_dataset_setups_rules_performance_comparison_graphs(experiment_results_df: pd.DataFrame):
-    # todo - split by more dataset details
-    topn_stats_per_eval_subgroup_df = experiment_results_df\
-        .groupby(['topn_actual', 'topn_perc', 'distortion_ratio', 'rule_name'])\
-        .agg({"score": [np.mean, np.std]})\
-        .reset_index()
-    topn_stats_per_eval_subgroup_df['score_mean'] = topn_stats_per_eval_subgroup_df['score']['mean']
-    topn_stats_per_eval_subgroup_df['score_std'] = topn_stats_per_eval_subgroup_df['score']['std']
-    topn_stats_per_eval_subgroup_df.drop(columns=['score'], inplace=True)
-
-    for (topn_actual, topn_perc, distortion_ratio), rule_stats_df in topn_stats_per_eval_subgroup_df.groupby(['topn_actual', 'topn_perc', 'distortion_ratio']):
-        comparison_title = f"Rule scores results comparison (topn = {topn_actual}[{topn_perc}%], distortion_ratio = {distortion_ratio})"
-        _display_title(comparison_title, main_else_secondary=True)
-
-        rule_stats_sorted_df = rule_stats_df.sort_values(by='score_mean', ascending=False)
-
-        x = list(rule_stats_sorted_df['rule_name'])
-        y = list(rule_stats_sorted_df['score_mean'])
-        yerr = list(rule_stats_sorted_df['score_std'])
-        rule_stats_df.sort_values(by='rule_name')
-
-        plt.rcParams["figure.figsize"] = (12, 4)
-        plt.rc('lines', linestyle='None')
-        plt.xticks(rotation=90)
-        plt.title(comparison_title)
-        plt.xlabel('Rule')
-        plt.ylabel('Mean score (topn)')
-        plt.errorbar(x, y, yerr=yerr, marker='o')
-        plt.show()
-        plt.close()
-
-        display_rule_stats_sorted_df = rule_stats_sorted_df.copy()
-        display_rule_stats_sorted_df['topn'] = \
-            display_rule_stats_sorted_df['topn_actual'].astype(str) + ' (' +\
-            display_rule_stats_sorted_df['topn_perc'].astype(str) + '%)'
-        display_rule_stats_sorted_df.drop(columns=['topn_actual', 'topn_perc'], inplace=True)
-        display(display_rule_stats_sorted_df.round(1))
-
-
 def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, graph_title: str):
     _display_title(graph_title, main_else_secondary=True)
     score_stats_per_subgroup_df = _results_to_score_stats_per_subgroup(
         relevant_results_df, subgroup_columns=DATASET_SETUP_DETAILS_COLUMNS)
 
-    # _display_title("top 3 wining rules per subgroup", main_else_secondary=False)
-    # top3_winning_rules_per_subgroup_df = score_stats_per_subgroup_df\
-    #     .groupby(by=[*DATASET_SETUP_DETAILS_COLUMNS]) \
-    #     .apply(lambda group: group.sort_values(["score_mean"], ascending=False).head(3))\
-    #     .sort_index().reset_index(drop=True)
-    # display(top3_winning_rules_per_subgroup_df)
-
-    comparison_graph_title = "winnings count per rule (borda-ish)"
-    # _display_title(comparison_graph_title, main_else_secondary=False)
     rule_to_accumulated_winnings_score = defaultdict(lambda: 0)
     sum_components_count = 0
     for _, trail_mean_df in score_stats_per_subgroup_df.groupby(by=[*DATASET_SETUP_DETAILS_COLUMNS]):
@@ -124,7 +76,7 @@ def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, gra
     plt.rcParams["figure.figsize"] = (12, 4)
     plt.rc('lines', linestyle='None')
     plt.xticks(rotation=90)
-    plt.title(comparison_graph_title)
+    plt.title("Mean winnings score per rule")
     plt.xlabel('Rule')
     plt.ylabel('Accumulated winnings score')
     plt.bar(x, y)
@@ -170,8 +122,11 @@ def _calc_ordered_score_to_rules(trail_mean_df) -> List[Tuple[float, List[str]]]
 
 def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame):
     inferable_subgroup_columns = _without(DATASET_SETUP_DETAILS_COLUMNS, ('voters_model', 'topn_perc', 'topn_actual'))
+    relevant_results_without_borda_veto_hybrid_rule_df = relevant_results_df[
+        relevant_results_df['rule_name'] != 'borda_veto_hybrid_rule'
+    ]
     score_stats_per_subgroup_df = _results_to_score_stats_per_subgroup(
-        relevant_results_df, subgroup_columns=inferable_subgroup_columns
+        relevant_results_without_borda_veto_hybrid_rule_df, subgroup_columns=inferable_subgroup_columns
     )
 
     trail_subgroup_to_best_rules_rows = []
