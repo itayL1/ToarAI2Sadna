@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Callable, Optional, Literal
+from typing import Callable, Optional, Literal, Any
 
 import pandas as pd
 from compsoc.evaluate import get_rule_utility
@@ -63,10 +63,29 @@ def eval_rule(
     return iterations_results_df
 
 
-def generate_eval_profile(voters_model: voter_model_names, number_voters: int, number_candidates: int, distortion_ratio: float) -> Profile:
-    profile = get_profile_from_model(number_candidates, number_voters, voters_model=voters_model, verbose=False)
+def generate_eval_profile(
+    voters_model: voter_model_names, number_voters: int, number_candidates: int, distortion_ratio: float
+) -> Profile:
+    # multinomial_dirichlet has a bug that happens in some probability
+    allowed_retries_count = 2 if voters_model == 'multinomial_dirichlet' else 0
+    profile = _call_with_retries(
+        lambda: get_profile_from_model(number_candidates, number_voters, voters_model=voters_model, verbose=False),
+        allowed_retries_count
+    )
+
     distorted_profile = generate_distorted_from_normal_profile(profile, distortion_ratio)
     return distorted_profile
+
+
+def _call_with_retries(func: Callable[[], Any], allowed_retries_count: int) -> Any:
+    executions_count = 0
+    while True:
+        executions_count += 1
+        try:
+            return func()
+        except:
+            if executions_count >= allowed_retries_count + 1:
+                raise
 
 
 @contextmanager

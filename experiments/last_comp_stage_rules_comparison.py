@@ -195,6 +195,8 @@ def _run_dataset_trails_task(
 
 
 def _store_experiment_results(experiment_id: str, trails_results: Collection[dict], experiment_extra_details: dict):
+    print(f"storing the results of the experiment (experiment_id: '{experiment_id}')")
+
     all_trails_results_dfs = []
     all_failed_iterations_details_dfs = []
     for trail_results in trails_results:
