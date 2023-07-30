@@ -25,6 +25,8 @@ def display_experiment_results(experiment_id: str):
     experiment_results_folder = get_experiment_results_folder_path(experiment_id)
     experiment_results_df = pd.read_csv(experiment_results_folder / 'results.csv')
 
+    _show_results_df_head(experiment_results_df)
+
     _plot_rules_winnings_comparison_graph(experiment_results_df, graph_title="all dataset setups")
     distribution_voter_models = sorted(set(experiment_results_df['voters_model']))
     for distribution_voter_model in distribution_voter_models:
@@ -49,6 +51,11 @@ def display_experiment_results(experiment_id: str):
         not_high_distortion_ratio_subgroup_df,
         graph_title=f"not high distortion ratio trails"
     )
+
+
+def _show_results_df_head(experiment_results_df: pd.DataFrame):
+    _display_title(f"results CSV head (shape={experiment_results_df.shape})", main_else_secondary=True)
+    display(experiment_results_df.head(10))
 
 
 def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, graph_title: str):
