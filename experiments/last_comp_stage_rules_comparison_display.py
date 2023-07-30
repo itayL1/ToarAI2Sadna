@@ -193,5 +193,5 @@ def _sort_dict_by_vals(dict_: dict, ascending: bool) -> dict:
 
 if __name__ == '__main__':
     display_experiment_results(
-        experiment_id='06d7546459494be9b40ebc6bd2de59b8'
+        experiment_id='c371483c662d401c8760cae2906cf438'
     )

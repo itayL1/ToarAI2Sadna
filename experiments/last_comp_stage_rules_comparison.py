@@ -33,7 +33,7 @@ RULE_NAME_TO_FUNC = {
     'plurality': plurality_rule,
     'simpson': simpson_rule,
     'veto': veto_rule,
-    'stv_rule_elishay': stv_rule_elishay,
+    'stv': stv_rule_elishay,
     'borda_veto_hybrid_rule': borda_veto_hybrid_rule,
     'random': random_rule,
     **{

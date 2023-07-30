@@ -21,6 +21,6 @@ def filter_experiment_results(experiment_id: str, filter_building_func: Callable
 
 if __name__ == '__main__':
     filter_experiment_results(
-        experiment_id='2968e846609248f494c59e035168d326',
+        experiment_id='df327e3a66c6418eafd3b3df1f36a1b1',
         filter_building_func=lambda df: df['rule_name'] != 'borda_veto_hybrid_rule'
     )
