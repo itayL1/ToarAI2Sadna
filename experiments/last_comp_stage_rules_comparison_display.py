@@ -80,17 +80,19 @@ def _plot_rules_winnings_comparison_graph(relevant_results_df: pd.DataFrame, gra
     x = list(rule_to_mean_winnings_score.keys())
     y = list(rule_to_mean_winnings_score.values())
 
+    print('\n\n')
     plt.rcParams["figure.figsize"] = (12, 4)
     plt.rc('lines', linestyle='None')
     plt.xticks(rotation=90)
-    plt.title("Mean winnings score per rule")
+    plt.title(f"{graph_title.capitalize()} - Mean winnings score per rule")
     plt.xlabel('Rule')
-    plt.ylabel('Accumulated winnings score')
+    plt.ylabel('Mean winnings score')
     plt.bar(x, y)
     plt.show()
     plt.close()
 
-    print(json.dumps(rule_to_mean_winnings_score, indent=4))
+    display(HTML(f"<b>sorted rules mean winnings score:</b> {rule_to_mean_winnings_score}"))
+    print('\n\n')
 
 
 def _results_to_score_stats_per_subgroup(
@@ -173,6 +175,27 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
     subgroups_with_high_distortion_ratio_df['#winning_rules'] =\
         subgroups_with_high_distortion_ratio_df['best_rules'].apply(lambda br: len(json.loads(br.replace("'", '"'))))
     display(dp.DataTable(subgroups_with_high_distortion_ratio_df))
+
+    _display_title("stuff_for_the_report_df", main_else_secondary=False)
+    stuff_for_the_report_df = inferable_subgroup_to_best_rules_df.copy()
+    stuff_for_the_report_df['borda_wins'] = \
+        stuff_for_the_report_df['best_rules'].str.contains("'borda'")
+    borda_wins_perc_per_distortion_ratio_df = stuff_for_the_report_df\
+        .groupby(by="distortion_ratio")['borda_wins']\
+        .apply(lambda borda_wins_series: ((borda_wins_series.astype(int).sum() / len(borda_wins_series)) * 100).round(1).astype(str) + '%')\
+        .reset_index(name="borda_wins")
+    display(dp.DataTable(borda_wins_perc_per_distortion_ratio_df))
+
+    stuff_for_the_report_df = inferable_subgroup_to_best_rules_df.copy()
+    stuff_for_the_report_df['veto_wins'] = \
+        stuff_for_the_report_df['best_rules'].str.contains("'veto'")
+    veto_wins_perc_per_distortion_ratio_df = stuff_for_the_report_df\
+        .groupby(by="distortion_ratio")['veto_wins']\
+        .apply(lambda borda_wins_series: ((borda_wins_series.astype(int).sum() / len(borda_wins_series)) * 100).round(1).astype(str) + '%')\
+        .reset_index(name="veto_wins")
+    borda_and_veto_wins_perc_per_distortion_ratio_df = \
+        borda_wins_perc_per_distortion_ratio_df.merge(veto_wins_perc_per_distortion_ratio_df, on='distortion_ratio')
+    display(dp.DataTable(borda_and_veto_wins_perc_per_distortion_ratio_df))
 
 
 def _without(collection: Collection, excluded_items: Collection) -> list:
