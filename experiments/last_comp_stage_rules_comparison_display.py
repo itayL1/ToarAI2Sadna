@@ -176,20 +176,21 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
         subgroups_with_high_distortion_ratio_df['best_rules'].apply(lambda br: len(json.loads(br.replace("'", '"'))))
     display(dp.DataTable(subgroups_with_high_distortion_ratio_df))
 
-    _display_title("stuff_for_the_report_df", main_else_secondary=False)
-    stuff_for_the_report_df = inferable_subgroup_to_best_rules_df.copy()
-    stuff_for_the_report_df['borda_wins'] = \
-        stuff_for_the_report_df['best_rules'].str.contains("'borda'")
-    borda_wins_perc_per_distortion_ratio_df = stuff_for_the_report_df\
+    _display_title("Subgroups where Borda rule doesn't win", main_else_secondary=False)
+    inferable_subgroup_to_best_rules_df = inferable_subgroup_to_best_rules_df.copy()
+    inferable_subgroup_to_best_rules_df['borda_wins'] = \
+        inferable_subgroup_to_best_rules_df['best_rules'].str.contains("'borda'")
+    borda_wins_perc_per_distortion_ratio_df = inferable_subgroup_to_best_rules_df\
         .groupby(by="distortion_ratio")['borda_wins']\
         .apply(lambda borda_wins_series: ((borda_wins_series.astype(int).sum() / len(borda_wins_series)) * 100).round(1).astype(str) + '%')\
         .reset_index(name="borda_wins")
     display(dp.DataTable(borda_wins_perc_per_distortion_ratio_df))
 
-    stuff_for_the_report_df = inferable_subgroup_to_best_rules_df.copy()
-    stuff_for_the_report_df['veto_wins'] = \
-        stuff_for_the_report_df['best_rules'].str.contains("'veto'")
-    veto_wins_perc_per_distortion_ratio_df = stuff_for_the_report_df\
+    _display_title("Subgroups where Borda rule wins or Veto rule wins", main_else_secondary=False)
+    inferable_subgroup_to_best_rules_df = inferable_subgroup_to_best_rules_df.copy()
+    inferable_subgroup_to_best_rules_df['veto_wins'] = \
+        inferable_subgroup_to_best_rules_df['best_rules'].str.contains("'veto'")
+    veto_wins_perc_per_distortion_ratio_df = inferable_subgroup_to_best_rules_df\
         .groupby(by="distortion_ratio")['veto_wins']\
         .apply(lambda borda_wins_series: ((borda_wins_series.astype(int).sum() / len(borda_wins_series)) * 100).round(1).astype(str) + '%')\
         .reset_index(name="veto_wins")
