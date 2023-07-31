@@ -21,7 +21,7 @@ DATASET_SETUP_DETAILS_COLUMNS = (
 )
 
 
-def display_experiment_results(experiment_id: str):
+def display_experiment_results(experiment_id: str, use_datapane_datatables: bool = False):
     experiment_results_folder = get_experiment_results_folder_path(experiment_id)
     experiment_results_df = pd.read_csv(experiment_results_folder / 'results.csv')
 
@@ -38,7 +38,7 @@ def display_experiment_results(experiment_id: str):
             graph_title=f"distribution_voter_model = '{distribution_voter_model}' trails"
         )
 
-    _show_trail_inferable_subgroup_to_best_rules(experiment_results_df)
+    _show_trail_inferable_subgroup_to_best_rules(experiment_results_df, use_datapane_datatables)
 
     high_distortion_ratio_condition = experiment_results_df['distortion_ratio'] >= 0.8
     high_distortion_ratio_subgroup_df = experiment_results_df[high_distortion_ratio_condition]
@@ -129,7 +129,9 @@ def _calc_ordered_score_to_rules(trail_mean_df) -> List[Tuple[float, List[str]]]
     return score_to_rules_ordered_by_score_desc
 
 
-def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame):
+def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFrame, use_datapane_datatables: bool = False):
+    table_display = dp.DataTable if use_datapane_datatables else lambda df: df
+
     inferable_subgroup_columns = _without(DATASET_SETUP_DETAILS_COLUMNS, ('voters_model', 'topn_perc', 'topn_actual'))
     relevant_results_without_borda_veto_hybrid_rule_df = relevant_results_df[
         relevant_results_df['rule_name'] != 'borda_veto_hybrid_rule'
@@ -155,13 +157,13 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
     inferable_subgroup_to_best_rules_df = pd.DataFrame(data=trail_subgroup_to_best_rules_rows)
 
     _display_title("inferable_subgroup_to_best_rules_df", main_else_secondary=True)
-    display(dp.DataTable(inferable_subgroup_to_best_rules_df))
+    display(table_display(inferable_subgroup_to_best_rules_df))
 
     _display_title("subgroups_where_borda_doesnt_win_df", main_else_secondary=False)
     subgroups_where_borda_doesnt_win_df = inferable_subgroup_to_best_rules_df[
         ~inferable_subgroup_to_best_rules_df['best_rules'].str.contains("'borda'")
     ]
-    display(dp.DataTable(subgroups_where_borda_doesnt_win_df))
+    display(table_display(subgroups_where_borda_doesnt_win_df))
 
     _display_title("subgroups_with_high_distortion_ratio_df", main_else_secondary=False)
     subgroups_with_high_distortion_ratio_df = inferable_subgroup_to_best_rules_df[
@@ -174,7 +176,7 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
         subgroups_with_high_distortion_ratio_df['best_rules'].str.contains("'borda'")
     subgroups_with_high_distortion_ratio_df['#winning_rules'] =\
         subgroups_with_high_distortion_ratio_df['best_rules'].apply(lambda br: len(json.loads(br.replace("'", '"'))))
-    display(dp.DataTable(subgroups_with_high_distortion_ratio_df))
+    display(table_display(subgroups_with_high_distortion_ratio_df))
 
     _display_title("Subgroups where Borda rule doesn't win", main_else_secondary=False)
     inferable_subgroup_to_best_rules_df = inferable_subgroup_to_best_rules_df.copy()
@@ -184,7 +186,7 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
         .groupby(by="distortion_ratio")['borda_wins']\
         .apply(lambda borda_wins_series: ((borda_wins_series.astype(int).sum() / len(borda_wins_series)) * 100).round(1).astype(str) + '%')\
         .reset_index(name="borda_wins")
-    display(dp.DataTable(borda_wins_perc_per_distortion_ratio_df))
+    display(table_display(borda_wins_perc_per_distortion_ratio_df))
 
     _display_title("Subgroups where Borda rule wins or Veto rule wins", main_else_secondary=False)
     inferable_subgroup_to_best_rules_df = inferable_subgroup_to_best_rules_df.copy()
@@ -196,7 +198,7 @@ def _show_trail_inferable_subgroup_to_best_rules(relevant_results_df: pd.DataFra
         .reset_index(name="veto_wins")
     borda_and_veto_wins_perc_per_distortion_ratio_df = \
         borda_wins_perc_per_distortion_ratio_df.merge(veto_wins_perc_per_distortion_ratio_df, on='distortion_ratio')
-    display(dp.DataTable(borda_and_veto_wins_perc_per_distortion_ratio_df))
+    display(table_display(borda_and_veto_wins_perc_per_distortion_ratio_df))
 
 
 def _without(collection: Collection, excluded_items: Collection) -> list:
